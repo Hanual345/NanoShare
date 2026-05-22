@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NanoShare</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="purpleGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#bb86fc" stop-opacity="1" />
+                            <stop offset="50%" stop-color="#7e57c2" stop-opacity="1" />
+                            <stop offset="100%" stop-color="#311b92" stop-opacity="1" />
+                        </linearGradient>
+                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="5" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                    </defs>
+                    <polygon points="50,10 90,80 10,80" fill="none" stroke="url(#purpleGlow)" stroke-width="4" filter="url(#glow)"/>
+                    <polygon points="50,10 50,80 90,80" fill="url(#purpleGlow)" opacity="0.3" />
+                    <polygon points="50,10 10,80 50,80" fill="url(#purpleGlow)" opacity="0.1" />
+                    <line x1="10" y1="80" x2="90" y2="80" stroke="#bb86fc" stroke-width="2" filter="url(#glow)"/>
+                    <line x1="50" y1="10" x2="50" y2="80" stroke="#bb86fc" stroke-width="2" />
+                </svg>
+                <h1>NanoShare</h1>
+            </div>
+            
+            <nav class="nav-links">
+                <button class="nav-btn active" data-target="transfer-view"><i class="fa-solid fa-bolt"></i> Transfer</button>
+                <button class="nav-btn" data-target="settings-view"><i class="fa-solid fa-gear"></i> Settings</button>
+                <button class="nav-btn" data-target="help-view"><i class="fa-solid fa-circle-question"></i> Help</button>
+                <button class="nav-btn" data-target="feedback-view"><i class="fa-solid fa-comment-dots"></i> Feedback</button>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- Transfer View (Default) -->
+            <div id="transfer-view" class="view-section active-view">
+                <header class="section-header">
+                    <h2>Secure File Transfer</h2>
+                    <p>Share files instantly across any network using secure 6-digit codes.</p>
+                </header>
+
+                <div class="dashboard">
+                    <!-- Send Section -->
+                    <section class="card send-card">
+                        <h3><i class="fa-solid fa-cloud-arrow-up"></i> Send File</h3>
+                        <div class="upload-area" id="uploadArea">
+                            <i class="fa-solid fa-file-arrow-up upload-icon"></i>
+                            <p>Drag & Drop your file here</p>
+                            <span class="or-text">or</span>
+                            <input type="file" id="fileInput" hidden>
+                            <button class="btn secondary-btn" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+                            <p class="file-name" id="selectedFileName"></p>
+                        </div>
+                        
+                        <div class="progress-container" id="uploadProgressContainer" style="display: none;">
+                            <div class="progress-bar" id="uploadProgressBar"></div>
+                        </div>
+
+                        <button class="btn primary-btn" id="uploadBtn" disabled><i class="fa-solid fa-qrcode"></i> Generate Code</button>
+
+                        <div class="result-area" id="codeResultArea" style="display: none;">
+                            <p>Sharing Code:</p>
+                            <div class="code-display" id="generatedCode">------</div>
+                            <p class="small-text"><i class="fa-solid fa-stopwatch"></i> Expires in 15 minutes.</p>
+                        </div>
+                    </section>
+
+                    <div class="divider">
+                        <span><i class="fa-solid fa-arrow-right-arrow-left"></i></span>
+                    </div>
+
+                    <!-- Receive Section -->
+                    <section class="card receive-card">
+                        <h3><i class="fa-solid fa-cloud-arrow-down"></i> Receive File</h3>
+                        <div class="input-area">
+                            <p>Enter the 6-digit code:</p>
+                            <input type="text" id="codeInput" maxlength="6" placeholder="000000" autocomplete="off">
+                        </div>
+                        
+                        <div class="error-msg" id="receiveError" style="display: none;"></div>
+
+                        <button class="btn primary-btn" id="downloadBtn" disabled><i class="fa-solid fa-download"></i> Download File</button>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="settings-view" class="view-section">
+                <header class="section-header">
+                    <h2>Settings</h2>
+                </header>
+                <div class="card settings-card">
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Dark Mode</h4>
+                            <p>Toggle interface theme</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked disabled>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Auto-Download</h4>
+                            <p>Automatically save files when code is verified</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Clear History</h4>
+                            <p>Remove local transfer logs (UI only)</p>
+                        </div>
+                        <button class="btn secondary-btn">Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help View -->
+            <div id="help-view" class="view-section">
+                <header class="section-header">
+                    <h2>Help & FAQ</h2>
+                </header>
+                <div class="card help-card">
+                    <details class="faq-item">
+                        <summary>How does NanoShare work?</summary>
+                        <p>NanoShare temporarily encrypts and stores your file on our local server. It generates a 6-digit code that can be used on any device to securely download the file.</p>
+                    </details>
+                    <details class="faq-item">
+                        <summary>Does it work without internet?</summary>
+                        <p>Yes! If you are on the same Wi-Fi network or using a Mobile Hotspot, the transfer happens directly over your local network.</p>
+                    </details>
+                    <details class="faq-item">
+                        <summary>Are my files secure?</summary>
+                        <p>Files are strictly temporary. They are automatically and permanently deleted from the server the moment they are downloaded, or after 15 minutes of inactivity.</p>
+                    </details>
+                </div>
+            </div>
+
+            <!-- Feedback View -->
+            <div id="feedback-view" class="view-section">
+                <header class="section-header">
+                    <h2>Send Feedback</h2>
+                </header>
+                <div class="card feedback-card">
+                    <p>Help us improve NanoShare. Let us know about any bugs or feature requests.</p>
+                    <textarea placeholder="Type your feedback here..." rows="5"></textarea>
+                    <button class="btn primary-btn"><i class="fa-solid fa-paper-plane"></i> Submit Feedback</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Version Watermark -->
+    <div class="version-tag">Version 1.0(India)</div>
+
+    <script src="app.js"></script>
+</body>
+</html>
