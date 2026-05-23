@@ -102,6 +102,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         generatedCode.textContent = response.code;
                         codeResultArea.style.display = 'block';
                         uploadBtn.textContent = 'Uploaded!';
+                        
+                        // Display the generated QR Code and Share Link
+                        if (response.qrCode) {
+                            document.getElementById('qr-result').style.display = 'block';
+                            document.getElementById('qr-code-img').src = response.qrCode;
+                            document.getElementById('share-link-anchor').href = response.shareUrl;
+                            document.getElementById('share-link-anchor').textContent = response.shareUrl;
+                        }
+
                         // Clear the selected files list after a successful upload
                         currentFiles = [];
                     } else {
@@ -278,3 +287,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// --- QR Scanner Logic ---
+let html5QrcodeScanner;
+
+window.startScanner = function() {
+    const scannerContainer = document.getElementById('scanner-container');
+    scannerContainer.style.display = 'block';
+    
+    // Initialize scanner only once
+    if (!html5QrcodeScanner) {
+        html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false
+        );
+    }
+    
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+};
+
+function onScanSuccess(decodedText, decodedResult) {
+    // Stop scanning once decoded
+    html5QrcodeScanner.clear();
+    document.getElementById('scanner-container').style.display = 'none';
+    
+    // If it's a link, redirect. If it's just the code, populate the input.
+    if(decodedText.includes('http')) {
+        window.location.href = decodedText;
+    } else {
+        const codeInput = document.getElementById('codeInput');
+        if (codeInput) {
+            codeInput.value = decodedText;
+            
+            // Manually trigger input event so the download button enables
+            codeInput.dispatchEvent(new Event('input')); 
+        }
+    }
+}
+
+function onScanFailure(error) {
+    // Usually safe to ignore continuous scanning errors
+}

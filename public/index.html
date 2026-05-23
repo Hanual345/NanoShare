@@ -8,7 +8,27 @@
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Scanner animation line */
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #bb86fc;
+            box-shadow: 0 0 10px #bb86fc;
+            animation: scan 2s infinite linear;
+            z-index: 10;
+            pointer-events: none;
+        }
+        @keyframes scan {
+            0% { top: 0; }
+            50% { top: 100%; }
+            100% { top: 0; }
+        }
     </style>
+    <!-- HTML5 QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
     <div class="app-wrapper">
@@ -77,6 +97,13 @@
                             <p>Sharing Code:</p>
                             <div class="code-display" id="generatedCode">------</div>
                             <p class="small-text"><i class="fa-solid fa-stopwatch"></i> Expires in 15 minutes.</p>
+                            
+                            <div id="qr-result" style="display: none; margin-top: 20px; text-align: center;">
+                                <p>Or Share via QR Code:</p>
+                                <img id="qr-code-img" src="" alt="QR Code" style="max-width: 200px; border-radius: 8px; margin: 10px 0;">
+                                <br>
+                                <a id="share-link-anchor" href="" target="_blank" style="word-break: break-all; color: #bb86fc;"></a>
+                            </div>
                         </div>
                     </section>
 
@@ -90,6 +117,13 @@
                         <div class="input-area">
                             <p>Enter the 7-character code:</p>
                             <input type="text" id="codeInput" maxlength="7" placeholder="e.g. 1a2b3c4" autocomplete="off">
+                            
+                            <p style="text-align: center; margin: 10px 0;">- OR -</p>
+                            <button type="button" class="btn secondary-btn" id="startScanBtn" onclick="startScanner()"><i class="fa-solid fa-camera"></i> Scan QR Code</button>
+                            <div id="scanner-container" style="display: none; position: relative; margin-top: 15px; overflow: hidden; border-radius: 8px;">
+                                <div id="reader" style="width: 100%;"></div>
+                                <div class="scan-line"></div>
+                            </div>
                         </div>
                         
                         <div class="error-msg" id="receiveError" style="display: none;"></div>
