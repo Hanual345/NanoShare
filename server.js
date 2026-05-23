@@ -8,7 +8,6 @@ const os = require('os');
 const crypto = require('crypto');
 const archiver = require('archiver');
 const nodemailer = require('nodemailer');
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -111,25 +110,53 @@ app.post('/api/upload', (req, res) => {
             code = generateCode();
         } while (fileMap.has(code));
 
-        const filesData = req.files.map((file, index) => ({
-            path: file.path,
-            originalName: file.originalname,
-            size: file.size,
-            index: index
-        }));
+        const zipFileName = `files-${code}.zip`;
+        const zipFilePath = path.join(uploadDir, zipFileName);
+        
+        const output = fs.createWriteStream(zipFilePath);
+        const archive = archiver('zip', {
+            zlib: { level: 9 } // Sets the compression level.
+        });
 
-        const fileDetails = {
-            files: filesData,
-            totalSize: filesData.reduce((acc, f) => acc + f.size, 0),
-            timestamp: Date.now(),
-            downloaded: new Set()
-        };
+        output.on('close', () => {
+            // Delete original uploaded files
+            req.files.forEach(file => {
+                fs.unlink(file.path, (err) => {
+                    if (err) console.error(`Failed to delete original file ${file.path}:`, err);
+                });
+            });
 
-        fileMap.set(code, fileDetails);
+            const fileDetails = {
+                files: [{
+                    path: zipFilePath,
+                    originalName: zipFileName,
+                    size: archive.pointer(),
+                    index: 0
+                }],
+                totalSize: archive.pointer(),
+                timestamp: Date.now(),
+                downloaded: new Set()
+            };
 
-        const uploadedFileNames = fileDetails.files.map(f => f.originalName).join(', ');
-        console.log(`Files uploaded: ${uploadedFileNames}, Code: ${code}`);
-        res.json({ success: true, code: code });
+            fileMap.set(code, fileDetails);
+
+            const uploadedFileNames = req.files.map(f => f.originalname).join(', ');
+            console.log(`Files uploaded and zipped: ${uploadedFileNames}, Code: ${code}`);
+            res.json({ success: true, code: code });
+        });
+
+        archive.on('error', (err) => {
+            console.error('Error creating zip archive:', err);
+            res.status(500).json({ error: 'Failed to create zip archive.' });
+        });
+
+        archive.pipe(output);
+
+        req.files.forEach(file => {
+            archive.file(file.path, { name: file.originalname });
+        });
+
+        archive.finalize();
     });
 });
 
