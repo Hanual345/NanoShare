@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const codeResultArea = document.getElementById('codeResultArea');
     const generatedCode = document.getElementById('generatedCode');
 
-    let currentFile = null;
+    let currentFiles = [];
 
     // Drag and drop handlers
     uploadArea.addEventListener('dragover', (e) => {
@@ -42,20 +42,28 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         uploadArea.classList.remove('dragover');
         if (e.dataTransfer.files.length > 0) {
-            handleFileSelect(e.dataTransfer.files[0]);
+            handleFilesSelect(e.dataTransfer.files);
         }
     });
 
     // Click handler for file input
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
-            handleFileSelect(e.target.files[0]);
+            handleFilesSelect(e.target.files);
         }
     });
 
-    function handleFileSelect(file) {
-        currentFile = file;
-        selectedFileName.textContent = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+    function handleFilesSelect(files) {
+        // Add new files to the existing array instead of replacing them
+        const newFiles = Array.from(files);
+        currentFiles = currentFiles.concat(newFiles);
+
+        if (currentFiles.length === 1) {
+             selectedFileName.textContent = `Selected: ${currentFiles[0].name} (${(currentFiles[0].size / 1024 / 1024).toFixed(2)} MB)`;
+        } else {
+             const totalSize = currentFiles.reduce((acc, file) => acc + file.size, 0);
+             selectedFileName.textContent = `Selected: ${currentFiles.length} files (${(totalSize / 1024 / 1024).toFixed(2)} MB)`;
+        }
         uploadBtn.disabled = false;
         
         // Reset UI if previous upload existed
@@ -65,14 +73,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     uploadBtn.addEventListener('click', async () => {
-        if (!currentFile) return;
+        if (currentFiles.length === 0) return;
 
         uploadBtn.disabled = true;
         uploadBtn.textContent = 'Uploading...';
         uploadProgressContainer.style.display = 'block';
 
         const formData = new FormData();
-        formData.append('file', currentFile);
+        currentFiles.forEach(file => {
+            formData.append('files', file);
+        });
 
         try {
             // Using XMLHttpRequest for upload progress
@@ -92,6 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         generatedCode.textContent = response.code;
                         codeResultArea.style.display = 'block';
                         uploadBtn.textContent = 'Uploaded!';
+                        // Clear the selected files list after a successful upload
+                        currentFiles = [];
                     } else {
                         alert('Upload failed: ' + response.error);
                         uploadBtn.textContent = 'Generate Code';
@@ -127,10 +139,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const receiveError = document.getElementById('receiveError');
 
     codeInput.addEventListener('input', (e) => {
-        // Only allow numbers
-        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        // Allow alphanumeric characters and make it lowercase
+        e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         
-        if (e.target.value.length === 6) {
+        if (e.target.value.length === 7) {
             downloadBtn.disabled = false;
         } else {
             downloadBtn.disabled = true;
@@ -140,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     downloadBtn.addEventListener('click', async () => {
         const code = codeInput.value;
-        if (code.length !== 6) return;
+        if (code.length !== 7) return;
 
         downloadBtn.disabled = true;
         downloadBtn.textContent = 'Checking...';
@@ -151,9 +163,56 @@ document.addEventListener('DOMContentLoaded', () => {
             const infoResponse = await fetch(`/api/info/${code}`);
             
             if (infoResponse.ok) {
-                // File exists, start actual download
-                downloadBtn.textContent = 'Downloading...';
-                window.location.href = `/api/download/${code}`;
+                const data = await infoResponse.json();
+                const ONE_GB = 1024 * 1024 * 1024;
+
+                if (data.files && data.files.length > 1 && data.totalSize < ONE_GB) {
+                    try {
+                        // Modern browsers: Prompt user to select/create a folder
+                        if (window.showDirectoryPicker) {
+                            downloadBtn.textContent = 'Select Folder to Save...';
+                            const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                            downloadBtn.textContent = 'Downloading files...';
+                            
+                            for (const file of data.files) {
+                                const fileHandle = await dirHandle.getFileHandle(file.name, { create: true });
+                                const writable = await fileHandle.createWritable();
+                                const response = await fetch(`/api/download/${code}/${file.index}`);
+                                await response.body.pipeTo(writable);
+                            }
+                        } else {
+                            // Fallback for Firefox/Safari: Download individually
+                            downloadBtn.textContent = 'Downloading files...';
+                            data.files.forEach(file => {
+                                const a = document.createElement('a');
+                                a.href = `/api/download/${code}/${file.index}`;
+                                a.download = file.name;
+                                a.style.display = 'none';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                            });
+                        }
+                    } catch (err) {
+                        // If the user hits "Cancel" on the folder prompt, just reset the button
+                        if (err.name === 'AbortError') {
+                            downloadBtn.textContent = 'Download File';
+                            downloadBtn.disabled = false;
+                            return; 
+                        } else {
+                            console.error('Folder save failed:', err);
+                            receiveError.textContent = 'Failed to save to folder. Try again.';
+                            receiveError.style.display = 'block';
+                            downloadBtn.textContent = 'Download File';
+                            downloadBtn.disabled = false;
+                            return;
+                        }
+                    }
+                } else {
+                    // Single file OR Zip if >= 1GB
+                    downloadBtn.textContent = 'Downloading...';
+                    window.location.href = `/api/download/${code}`;
+                }
                 
                 // Reset UI after a short delay
                 setTimeout(() => {
@@ -179,4 +238,43 @@ document.addEventListener('DOMContentLoaded', () => {
             downloadBtn.disabled = false;
         }
     });
+
+    // --- Feedback Logic ---
+    const feedbackMessage = document.getElementById('feedbackMessage');
+    const submitFeedbackBtn = document.getElementById('submitFeedbackBtn');
+    const feedbackStatus = document.getElementById('feedbackStatus');
+
+    if (submitFeedbackBtn && feedbackMessage) {
+        submitFeedbackBtn.addEventListener('click', async () => {
+            const message = feedbackMessage.value.trim();
+            if (!message) return;
+
+            submitFeedbackBtn.disabled = true;
+            submitFeedbackBtn.textContent = 'Sending...';
+            feedbackStatus.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                
+                const data = await response.json();
+                
+                feedbackStatus.textContent = data.success ? data.message : (data.error || 'Failed to send feedback.');
+                feedbackStatus.style.color = data.success ? 'green' : 'red';
+                feedbackStatus.style.display = 'block';
+                
+                if (data.success) feedbackMessage.value = '';
+            } catch (error) {
+                feedbackStatus.textContent = 'Network error. Please try again.';
+                feedbackStatus.style.color = 'red';
+                feedbackStatus.style.display = 'block';
+            } finally {
+                submitFeedbackBtn.disabled = false;
+                submitFeedbackBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Feedback';
+            }
+        });
+    }
 });
