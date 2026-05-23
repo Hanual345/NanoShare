@@ -1,4 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Check for Shared Link Code on Load ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedCode = urlParams.get('code');
+    
+    if (sharedCode) {
+        const codeInput = document.getElementById('codeInput');
+        if (codeInput) {
+            codeInput.value = sharedCode;
+            // Manually trigger input to validate and enable the download button
+            codeInput.dispatchEvent(new Event('input'));
+            
+            setTimeout(() => {
+                const downloadBtn = document.getElementById('downloadBtn');
+                if (downloadBtn && !downloadBtn.disabled) downloadBtn.click();
+            }, 100);
+        }
+    }
+
     // --- Navigation Logic ---
     const navBtns = document.querySelectorAll('.nav-btn');
     const views = document.querySelectorAll('.view-section');
@@ -289,37 +307,65 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- QR Scanner Logic ---
-let html5QrcodeScanner;
+let html5QrCode;
 
 window.startScanner = function() {
     const scannerContainer = document.getElementById('scanner-container');
     scannerContainer.style.display = 'block';
     
-    // Initialize scanner only once
-    if (!html5QrcodeScanner) {
-        html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false
-        );
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
     }
     
-    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    html5QrCode.start(
+        { facingMode: "environment" }, // Forces the back camera
+        {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+        },
+        onScanSuccess,
+        onScanFailure
+    ).catch(err => {
+        console.error("Failed to start scanner:", err);
+        alert("Camera access denied or back camera not found.");
+        scannerContainer.style.display = 'none';
+    });
 };
 
 function onScanSuccess(decodedText, decodedResult) {
     // Stop scanning once decoded
-    html5QrcodeScanner.clear();
-    document.getElementById('scanner-container').style.display = 'none';
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            document.getElementById('scanner-container').style.display = 'none';
+        }).catch(err => console.error("Failed to stop scanner", err));
+    }
     
-    // If it's a link, redirect. If it's just the code, populate the input.
-    if(decodedText.includes('http')) {
-        window.location.href = decodedText;
-    } else {
-        const codeInput = document.getElementById('codeInput');
-        if (codeInput) {
-            codeInput.value = decodedText;
-            
-            // Manually trigger input event so the download button enables
-            codeInput.dispatchEvent(new Event('input')); 
+    let codeToUse = decodedText;
+
+    // If the QR code contains the full URL (e.g. http://.../?code=1a2b3c4), extract just the code
+    if (decodedText.includes('http')) {
+        try {
+            const url = new URL(decodedText);
+            const urlCode = url.searchParams.get('code');
+            if (urlCode) {
+                codeToUse = urlCode;
+            }
+        } catch (e) {
+            console.error("Invalid URL in QR Code", e);
+        }
+    }
+    
+    const codeInput = document.getElementById('codeInput');
+    if (codeInput) {
+        codeInput.value = codeToUse;
+        
+        // Manually trigger input event so the download button enables
+        codeInput.dispatchEvent(new Event('input')); 
+        
+        // Auto click the download button
+        const downloadBtn = document.getElementById('downloadBtn');
+        if (downloadBtn && !downloadBtn.disabled) {
+            downloadBtn.click();
         }
     }
 }
