@@ -316,10 +316,19 @@ app.post('/api/feedback', async (req, res) => {
         return res.status(400).json({ error: 'Feedback message is required.' });
     }
 
+    // Append feedback to a text file
+    const feedbackEntry = `[${new Date().toISOString()}] Feedback:\n${message.trim()}\n${'-'.repeat(40)}\n`;
+    try {
+        await fs.promises.appendFile(path.join(__dirname, 'feedback.txt'), feedbackEntry);
+    } catch (err) {
+        console.error('Failed to append feedback to file:', err);
+        return res.status(500).json({ error: 'Failed to save feedback.' });
+    }
+
     // Check if email service is configured before attempting to send
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-        console.error('Email service is not configured. Cannot send feedback. Please set EMAIL_USER and EMAIL_PASS environment variables.');
-        return res.status(500).json({ error: 'Feedback service is currently unavailable.' });
+        console.warn('Email service is not configured. Feedback saved to file only.');
+        return res.json({ success: true, message: 'Thank you for your feedback!' });
     }
 
     const mailOptions = {
@@ -333,11 +342,12 @@ app.post('/api/feedback', async (req, res) => {
     try {
         await transporter.sendMail(mailOptions);
         console.log('Feedback email sent successfully.');
-        res.json({ success: true, message: 'Thank you for your feedback!' });
     } catch (error) {
-        console.error('Error sending feedback email:', error);
-        res.status(500).json({ error: 'Failed to send feedback.' });
+            console.error('Error sending feedback email (saved to file instead):', error.message);
     }
+        
+        // Always return success since it was successfully saved to feedback.txt
+        res.json({ success: true, message: 'Thank you for your feedback!' });
 });
 
 app.listen(PORT, '0.0.0.0', () => {

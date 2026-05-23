@@ -26,6 +26,90 @@
             50% { top: 100%; }
             100% { top: 0; }
         }
+        
+        /* --- Modern Animated Design Overrides --- */
+        :root {
+            --bg-color: #0f0c29;
+            --text-color: #ffffff;
+            --primary-color: #bb86fc;
+            --secondary-color: #03dac6;
+            --card-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            background: linear-gradient(45deg, #0f0c29, #302b63, #24243e);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: var(--text-color);
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism Wrapper */
+        .app-wrapper {
+            backdrop-filter: blur(10px);
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border-radius: 20px;
+        }
+
+        /* Floating Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(187, 134, 252, 0.3);
+        }
+
+        /* Animated Gradient Buttons */
+        .btn.primary-btn {
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+            background-size: 200% auto;
+        }
+
+        .btn.primary-btn:hover:not(:disabled) {
+            background-position: right center;
+            box-shadow: 0 0 15px var(--primary-color);
+            transform: scale(1.05);
+        }
+
+        /* Smooth Sidebar Interactions */
+        .nav-btn {
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: rgba(187, 134, 252, 0.2);
+            color: var(--primary-color);
+            transform: translateX(10px);
+        }
+
+        .upload-area {
+            transition: all 0.3s ease;
+            border-color: rgba(187, 134, 252, 0.5);
+            background: rgba(0,0,0,0.2);
+        }
+
+        /* Glowing Dropzone */
+        .upload-area:hover, .upload-area.dragover {
+            background: rgba(187, 134, 252, 0.1);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 20px rgba(187, 134, 252, 0.2) inset;
+        }
     </style>
     <!-- HTML5 QR Code Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode"></script>
