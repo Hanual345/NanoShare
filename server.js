@@ -8,6 +8,7 @@ const os = require('os');
 const crypto = require('crypto');
 const archiver = require('archiver');
 const nodemailer = require('nodemailer');
+const QRCode = require('qrcode');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -142,7 +143,16 @@ app.post('/api/upload', (req, res) => {
 
             const uploadedFileNames = req.files.map(f => f.originalname).join(', ');
             console.log(`Files uploaded and zipped: ${uploadedFileNames}, Code: ${code}`);
-            res.json({ success: true, code: code });
+            
+            // Generate a shareable link using the host that received the request
+            const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+            const shareUrl = `${baseUrl}/?code=${code}`;
+
+            // Generate QR Code as a Data URL (base64 image)
+            QRCode.toDataURL(shareUrl, { width: 300, margin: 2 }, (qrErr, qrDataUrl) => {
+                if (qrErr) console.error('Failed to generate QR code:', qrErr);
+                res.json({ success: true, code: code, qrCode: qrDataUrl || null, shareUrl: shareUrl });
+            });
         });
 
         archive.on('error', (err) => {
