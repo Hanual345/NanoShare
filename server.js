@@ -26,7 +26,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ---------------------------------------------------------
 app.get('/robots.txt', (req, res) => {
     res.type('text/plain');
-    res.send("User-agent: *\nAllow: /");
+    res.send("User-agent: *\nAllow: /\nSitemap: https://www.joshuaxcare.online/sitemap.xml");
 });
 
 app.get('/sitemap.xml', (req, res) => {
