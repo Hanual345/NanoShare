@@ -30,7 +30,8 @@ app.get('/robots.txt', (req, res) => {
 });
 
 app.get('/sitemap.xml', (req, res) => {
-    const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    // Use the exact live domain to prevent Google Search Console "Invalid URL" errors
+    const baseUrl = process.env.APP_BASE_URL || 'https://www.joshuaxcare.online';
     res.type('application/xml');
     res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
