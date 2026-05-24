@@ -9,12 +9,35 @@ const crypto = require('crypto');
 const archiver = require('archiver');
 const nodemailer = require('nodemailer');
 const QRCode = require('qrcode');
+const compression = require('compression');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ---------------------------------------------------------
+// SEO Endpoints (Robots.txt & Sitemap)
+// ---------------------------------------------------------
+app.get('/robots.txt', (req, res) => {
+    res.type('text/plain');
+    res.send("User-agent: *\nAllow: /");
+});
+
+app.get('/sitemap.xml', (req, res) => {
+    const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    res.type('application/xml');
+    res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${baseUrl}/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>`);
+});
 
 // --- Nodemailer setup for feedback ---
 // IMPORTANT: Use environment variables for security, do not hardcode credentials.
