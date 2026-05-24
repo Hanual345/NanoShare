@@ -13,6 +13,9 @@ const compression = require('compression');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust the proxy (Render's load balancer) to ensure req.protocol correctly identifies as 'https'
+app.set('trust proxy', 1);
+
 app.use(compression());
 app.use(cors());
 app.use(express.json());
